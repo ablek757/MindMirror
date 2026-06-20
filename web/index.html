@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>个人认知外脑</title>
+  <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --panel-light: #334155;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.15);
+      --border: #334155;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      overflow: hidden;
+    }
+    aside {
+      width: 320px;
+      min-width: 280px;
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+    .brand {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .brand h1 {
+      margin: 0;
+      font-size: 18px;
+      color: var(--accent);
+    }
+    .brand p {
+      margin: 6px 0 0;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .panel-section {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .panel-section h2 {
+      margin: 0 0 12px;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .stat {
+      background: var(--panel-light);
+      padding: 10px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .stat .num {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .stat .label {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    button {
+      background: var(--accent);
+      color: #0f172a;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      width: 100%;
+      margin-top: 8px;
+    }
+    button:hover { opacity: 0.9; }
+    button.secondary {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+    }
+    textarea, input, select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      resize: none;
+    }
+    .chat-box {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .msg {
+      max-width: 92%;
+      padding: 10px 13px;
+      border-radius: 12px;
+      line-height: 1.5;
+      font-size: 13px;
+      white-space: pre-wrap;
+    }
+    .msg.user {
+      align-self: flex-end;
+      background: var(--accent);
+      color: #0f172a;
+    }
+    .msg.assistant {
+      align-self: flex-start;
+      background: var(--panel-light);
+      color: var(--text);
+    }
+    .chat-input {
+      padding: 12px 20px 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+    }
+    .chat-input textarea {
+      flex: 1;
+    }
+    .chat-input button {
+      width: auto;
+      margin: 0;
+    }
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    #graph {
+      flex: 1;
+      background: var(--bg);
+    }
+    .toolbar {
+      height: 48px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 12px;
+    }
+    .toolbar input {
+      width: 240px;
+    }
+    .node-detail {
+      position: absolute;
+      right: 16px;
+      top: 64px;
+      width: 280px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      display: none;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    .node-detail.active { display: block; }
+    .node-detail h3 { margin: 0 0 8px; color: var(--accent); }
+    .node-detail .type { color: var(--text-muted); font-size: 12px; margin-bottom: 12px; }
+    .fragment-list { list-style: none; padding: 0; margin: 0; }
+    .fragment-list li {
+      background: var(--panel-light);
+      padding: 8px 10px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .mode-select { width: 120px; }
+  </style>
+</head>
+<body>
+  <aside>
+    <div class="brand">
+      <h1>个人认知外脑</h1>
+      <p>把碎片织成会生长的思维图谱</p>
+    </div>
+    <div class="panel-section">
+      <div class="stats">
+        <div class="stat"><div class="num" id="stat-fragments">-</div><div class="label">碎片</div></div>
+        <div class="stat"><div class="num" id="stat-nodes">-</div><div class="label">节点</div></div>
+        <div class="stat"><div class="num" id="stat-edges">-</div><div class="label">关系</div></div>
+        <div class="stat"><div class="num" id="stat-unwoven">-</div><div class="label">待编织</div></div>
+      </div>
+      <button onclick="weave()">🧶 执行认知编织</button>
+    </div>
+    <div class="panel-section">
+      <h2>摄入碎片</h2>
+      <textarea id="fragment-input" rows="3" placeholder="写下此刻的想法、摘录或问题..."></textarea>
+      <input id="fragment-tags" type="text" placeholder="标签，用逗号分隔" style="margin-top:8px;" />
+      <button onclick="ingest()">💾 保存碎片</button>
+    </div>
+    <div class="panel-section chat-box">
+      <h2>认知对话</h2>
+      <div class="messages" id="messages"></div>
+      <div class="chat-input">
+        <select id="chat-mode" class="mode-select">
+          <option value="default">默认</option>
+          <option value="think">深度思考</option>
+          <option value="challenge">质疑反驳</option>
+          <option value="create">创作</option>
+        </select>
+        <textarea id="chat-input" rows="1" placeholder="输入 /think 切换模式"></textarea>
+        <button onclick="sendChat()">➤</button>
+      </div>
+    </div>
+  </aside>
+  <main>
+    <div class="toolbar">
+      <input id="search" type="text" placeholder="搜索节点或记忆..." onkeydown="if(event.key==='Enter') search()" />
+      <button class="secondary" onclick="search()">搜索</button>
+      <button class="secondary" onclick="loadGraph()">刷新图谱</button>
+      <button class="secondary" onclick="exportMarkdown()">导出 Markdown</button>
+    </div>
+    <div id="graph"></div>
+    <div id="node-detail" class="node-detail">
+      <h3 id="detail-label"></h3>
+      <div class="type" id="detail-type"></div>
+      <p id="detail-desc"></p>
+      <h4>关联碎片</h4>
+      <ul class="fragment-list" id="detail-fragments"></ul>
+    </div>
+  </main>
+
+  <script>
+    const sessionId = Math.random().toString(36).slice(2, 10);
+    let network = null;
+    let nodesDataSet = new vis.DataSet();
+    let edgesDataSet = new vis.DataSet();
+
+    const colors = {
+      concept: '#38bdf8',
+      person: '#f472b6',
+      project: '#a78bfa',
+      question: '#fbbf24',
+      idea: '#34d399',
+      source: '#94a3b8'
+    };
+
+    async function fetchJson(url, opts) {
+      const r = await fetch(url, opts);
+      return r.json();
+    }
+
+    async function loadStats() {
+      const s = await fetchJson('/api/stats');
+      document.getElementById('stat-fragments').textContent = s.fragments;
+      document.getElementById('stat-nodes').textContent = s.nodes;
+      document.getElementById('stat-edges').textContent = s.edges;
+      document.getElementById('stat-unwoven').textContent = s.unwoven_fragments;
+    }
+
+    async function loadGraph() {
+      const data = await fetchJson('/api/graph');
+      nodesDataSet.clear();
+      edgesDataSet.clear();
+      nodesDataSet.add(data.nodes.map(n => ({
+        id: n.id,
+        label: n.label,
+        color: { background: colors[n.type] || colors.concept, border: '#fff' },
+        font: { color: '#e2e8f0' },
+        title: n.description || n.label,
+        shape: 'dot',
+        size: 18 + (n.connections || 0) * 2,
+        data: n
+      })));
+      edgesDataSet.add(data.edges.map(e => ({
+        from: e.source,
+        to: e.target,
+        label: e.relation,
+        arrows: 'to',
+        color: { color: '#475569', highlight: '#38bdf8' },
+        font: { color: '#94a3b8', size: 11 }
+      })));
+      drawNetwork();
+      loadStats();
+    }
+
+    function drawNetwork() {
+      const container = document.getElementById('graph');
+      const data = { nodes: nodesDataSet, edges: edgesDataSet };
+      const options = {
+        physics: { stabilization: false, barnesHut: { gravitationalConstant: -3000, springLength: 120 } },
+        interaction: { hover: true, tooltipDelay: 200 },
+        layout: { randomSeed: 2 }
+      };
+      network = new vis.Network(container, data, options);
+      network.on('click', async (params) => {
+        if (params.nodes.length === 1) {
+          await showNode(params.nodes[0]);
+        } else {
+          document.getElementById('node-detail').classList.remove('active');
+        }
+      });
+    }
+
+    async function showNode(nodeId) {
+      const detail = await fetchJson(`/api/nodes/${nodeId}`);
+      document.getElementById('detail-label').textContent = detail.label;
+      document.getElementById('detail-type').textContent = detail.type;
+      document.getElementById('detail-desc').textContent = detail.description || '暂无描述';
+      const ul = document.getElementById('detail-fragments');
+      ul.innerHTML = '';
+      (detail.fragments || []).forEach(f => {
+        const li = document.createElement('li');
+        li.textContent = f.content;
+        ul.appendChild(li);
+      });
+      document.getElementById('node-detail').classList.add('active');
+    }
+
+    async function ingest() {
+      const content = document.getElementById('fragment-input').value.trim();
+      const tags = document.getElementById('fragment-tags').value.trim();
+      if (!content) return;
+      await fetchJson('/api/fragments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, source: 'web', tags })
+      });
+      document.getElementById('fragment-input').value = '';
+      document.getElementById('fragment-tags').value = '';
+      loadStats();
+    }
+
+    async function weave() {
+      const btn = event.target;
+      btn.textContent = '编织中...';
+      const r = await fetchJson('/api/weave', { method: 'POST' });
+      btn.textContent = `🧶 编织完成 (+${r.nodes_added} 节点 / +${r.edges_added} 关系)`;
+      setTimeout(() => btn.textContent = '🧶 执行认知编织', 2000);
+      loadGraph();
+    }
+
+    async function search() {
+      const q = document.getElementById('search').value.trim();
+      if (!q) return;
+      const r = await fetchJson(`/api/memory/search?q=${encodeURIComponent(q)}&top_k=5`);
+      const ids = r.nodes.map(n => n.id);
+      if (ids.length) {
+        network.selectNodes(ids, true);
+        network.focus(ids[0], { scale: 1.2, animation: true });
+      }
+    }
+
+    async function exportMarkdown() {
+      const r = await fetchJson('/api/export/markdown');
+      const blob = new Blob([r.content], { type: 'text/markdown' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'cognitive-exo-brain.md';
+      a.click();
+    }
+
+    async function sendChat() {
+      const input = document.getElementById('chat-input');
+      const mode = document.getElementById('chat-mode').value;
+      const msg = input.value.trim();
+      if (!msg) return;
+      input.value = '';
+      addMessage('user', msg);
+      const assistantEl = addMessage('assistant', '');
+
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg, session_id: sessionId, mode })
+      });
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+          const data = line.replace(/^data: /, '');
+          if (data === '[DONE]') return;
+          assistantEl.textContent += data;
+        }
+      }
+    }
+
+    function addMessage(role, text) {
+      const box = document.getElementById('messages');
+      const el = document.createElement('div');
+      el.className = `msg ${role}`;
+      el.textContent = text;
+      box.appendChild(el);
+      box.scrollTop = box.scrollHeight;
+      return el;
+    }
+
+    document.getElementById('chat-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendChat();
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadStats();
+      loadGraph();
+    });
+  </script>
+</body>
+</html>

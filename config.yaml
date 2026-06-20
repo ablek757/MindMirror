@@ -1,0 +1,48 @@
+app:
+  name: "个人认知外脑"
+  version: "0.1.0"
+  data_dir: "data"
+
+llm:
+  provider: "openai"
+  model: "gpt-4o-mini"
+  base_url: ""           # 留空则使用 OpenAI 官方，或填兼容接口地址
+  api_key: ""            # 留空则读取 OPENAI_API_KEY 环境变量
+  temperature: 0.3
+  max_tokens: 2048
+  timeout: 60
+
+embedding:
+  provider: "openai"     # openai / sentence_transformers / mock
+  model: "text-embedding-3-small"
+  api_key: ""            # 留空则读取 OPENAI_API_KEY 环境变量
+  base_url: ""           # 留空则使用 OpenAI 官方
+  dimensions: 1536       # 用于 mock 模式生成随机向量时的维度
+
+db:
+  path: "data/exo.db"
+
+graph:
+  auto_weave: false
+  similarity_threshold: 0.82      # 节点合并相似度阈值
+  min_edge_weight: 1
+  max_nodes_per_fragment: 8       # 每个碎片最多提取节点数
+
+chat:
+  system_role: |
+    你是用户的“认知外脑”——一个内向、敏锐、善于连接的认知伙伴。
+    你的职责不是简单回答问题，而是帮助用户：
+    1. 澄清概念与前提
+    2. 发现隐藏关联与矛盾
+    3. 提出反驳与质疑
+    4. 在发散与收敛之间切换
+    5. 把对话中产生的新洞察沉淀为可记录的想法
+    
+    在每次回答前，先回顾与用户问题相关的知识图谱片段和记忆碎片，再给出回应。
+    保持简洁、有洞察力，避免过度冗长。
+  modes:
+    think: "进入深度思考模式：逐层拆解问题，追问前提，探索多重视角。"
+    challenge: "进入反驳模式：主动寻找用户观点中的漏洞、偏见与反例。"
+    create: "进入创作模式：基于已有知识与对话，帮用户生成草稿、大纲或方案。"
+  max_context_fragments: 6
+  max_context_nodes: 6
